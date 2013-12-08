@@ -16,18 +16,25 @@ class GalSim < Formula
   depends_on 'numpy' => :python
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c34ed2f... put caveats in a separate caveats function
   def pyver
     IO.popen("python -c 'import sys; print sys.version[:3]'").read.strip
   end
 
+<<<<<<< HEAD
 =======
 >>>>>>> 1690d84... add gal-sim: a galaxy simulation toolbox.
+=======
+>>>>>>> c34ed2f... put caveats in a separate caveats function
   def install
     # This ought to be part of a standard homebrew install;
     # required so that homebrew creates symlinks
     #   lib/pythonX.Y/galsim -> Cellar/gal-sim/0.2/lib/pythonX.Y/galsim
     # rather than
     #   lib/pythonX.Y -> Cellar/gal-sim/0.2/lib/pythonX.Y
+<<<<<<< HEAD
 <<<<<<< HEAD
     ohai "Python version is #{pyver}"
     mkdir_p "#{HOMEBREW_PREFIX}/lib/python#{pyver}"
@@ -52,20 +59,27 @@ class GalSim < Formula
         pyver = pv_io.read.strip
     }
     ohai "Python version is *#{pyver}*"
+=======
+    ohai "Python version is #{pyver}"
+>>>>>>> c34ed2f... put caveats in a separate caveats function
     mkdir_p "#{HOMEBREW_PREFIX}/lib/python#{pyver}"
-
     system "scons"
     system "scons install PREFIX=#{prefix} PYPREFIX=#{lib}/python#{pyver}"
-
-    ohai ""
-    ohai "The GalSim installer may warn you that #{lib}/python isn't in your python search path."
-    ohai "You may want to add all Homebrew python packages to the default paths by running:"
-    ohai "   sudo bash -c 'echo \"/usr/local/lib/python\" >> \\\\"
-    ohai "     /Library/Python/#{pyver}/site-packages/homebrew.pth'"
-    ohai "Which will create the file   /Library/Python/#{pyver}/site-packages/homebrew.pth"
-    ohai "with contents:"
-    ohai "  /usr/local/lib/python#{pyver}"
-    ohai ""
   end
+
+  def caveats; <<-EOS.undent
+    The GalSim installer may warn you that #{lib}/python isn't in your python search path.
+    You may want to add all Homebrew python packages to the default paths by running:
+       sudo bash -c 'echo \"/usr/local/lib/python\" >> \\\\
+         /Library/Python/#{pyver}/site-packages/homebrew.pth'
+    Which will create the file   /Library/Python/#{pyver}/site-packages/homebrew.pth
+    with contents:
+      /usr/local/lib/python#{pyver}
+    EOS
+  end
+<<<<<<< HEAD
 >>>>>>> 1690d84... add gal-sim: a galaxy simulation toolbox.
+=======
+
+>>>>>>> c34ed2f... put caveats in a separate caveats function
 end
