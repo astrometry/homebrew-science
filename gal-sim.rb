@@ -2,8 +2,8 @@ require 'formula'
 
 class GalSim < Formula
   homepage 'https://github.com/GalSim-developers/GalSim'
-  url 'https://github.com/GalSim-developers/GalSim/archive/v1.0.0.tar.gz'
-  sha1 '705ef051f45202e973d2dbb6be8a54a4969bf0c9'
+  url 'https://github.com/GalSim-developers/GalSim/archive/v1.0.1.tar.gz'
+  sha1 '519c9f83c0f9092507185ba46cb21231f60df9fe'
   head 'https://github.com/GalSim-developers/GalSim.git'
 
   depends_on 'scons' => :build
@@ -20,15 +20,9 @@ class GalSim < Formula
   end
 
   def install
-    # This ought to be part of a standard homebrew install;
-    # required so that homebrew creates symlinks
-    #   lib/pythonX.Y/galsim -> Cellar/gal-sim/0.2/lib/pythonX.Y/galsim
-    # rather than
-    #   lib/pythonX.Y -> Cellar/gal-sim/0.2/lib/pythonX.Y
-    ohai "Python version is #{pyver}"
-    mkdir_p "#{HOMEBREW_PREFIX}/lib/python#{pyver}"
-    system "scons"
-    system "scons install PREFIX=#{prefix} PYPREFIX=#{lib}/python#{pyver}"
+    scons
+    "scons install PREFIX=#{prefix} PYPREFIX=#{lib}/python#{pyver}"
+    "scons tests"
   end
 
   def caveats; <<-EOS.undent
