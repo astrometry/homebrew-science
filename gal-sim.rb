@@ -2,8 +2,8 @@ require "formula"
 
 class GalSim < Formula
   homepage "https://github.com/GalSim-developers/GalSim"
-  url "https://github.com/GalSim-developers/GalSim/archive/v1.0.0.tar.gz"
-  sha1 "705ef051f45202e973d2dbb6be8a54a4969bf0c9"
+  url "https://github.com/GalSim-developers/GalSim/archive/v1.0.1.tar.gz"
+  sha1 '519c9f83c0f9092507185ba46cb21231f60df9fe'
   head "https://github.com/GalSim-developers/GalSim.git"
 
   depends_on "scons" => :build
