@@ -22,22 +22,14 @@ class GalSim < Formula
   end
 
   def install
-    # This ought to be part of a standard homebrew install;
-    # required so that homebrew creates symlinks
-    #   lib/pythonX.Y/galsim -> Cellar/gal-sim/0.2/lib/pythonX.Y/galsim
-    # rather than
-    #   lib/pythonX.Y -> Cellar/gal-sim/0.2/lib/pythonX.Y
-    ohai "Python version is #{pyver}"
-    mkdir_p "#{HOMEBREW_PREFIX}/lib/python#{pyver}"
     args = []
     if build.with? "openmp"
       if ENV.compiler == :clang
-        opoo "OpenMP support will not be enabled. Use --use-gcc if you require OpenMP."
+        opoo "OpenMP support will not be enabled. Use --cc=gcc-4.2 (formerly --use-gcc) if you require OpenMP."
       end
       args << "WITH_OPENMP=true"
     end
-
-    system "scons"
+    system "scons", *args
     system "scons install PREFIX=#{prefix} PYPREFIX=#{lib}/python#{pyver}"
   end
 
