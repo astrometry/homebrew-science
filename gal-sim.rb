@@ -15,6 +15,8 @@ class GalSim < Formula
   depends_on 'pyfits' => :python
   depends_on 'numpy' => :python
 
+  option "with-openmp", "Enable openmp support (gcc only)"
+
   def pyver
     IO.popen("python -c 'import sys; print sys.version[:3]'").read.strip
   end
@@ -27,6 +29,14 @@ class GalSim < Formula
     #   lib/pythonX.Y -> Cellar/gal-sim/0.2/lib/pythonX.Y
     ohai "Python version is #{pyver}"
     mkdir_p "#{HOMEBREW_PREFIX}/lib/python#{pyver}"
+    args = []
+
+    if build.with? "openmp"
+      if ENV.compiler == :clang
+        opoo 'OpenMP support will not be enabled. Use --use-gcc if you require OpenMP.'
+      end
+      args << "WITH_OPENMP=true"
+    end
     system "scons"
     system "scons install PREFIX=#{prefix} PYPREFIX=#{lib}/python#{pyver}"
   end
