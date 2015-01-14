@@ -1,7 +1,7 @@
 require 'formula'
 
 class Analysis < Formula
-  homepage 'http://molpopgen.org/software/lseqsoftware.html'
+  homepage "https://github.com/molpopgen/analysis"
   url 'http://molpopgen.org/software/analysis/analysis-0.8.4.tar.gz'
   sha1 '96d3e382216d34a0c2803087d6024323a8f20a2b'
 
@@ -9,10 +9,8 @@ class Analysis < Formula
   depends_on "gsl"
   depends_on "libsequence"
 
-  def patches
-    # Automake looks for boost_regex, rather than boost_regex-mt
-    DATA
-  end
+  # Automake looks for boost_regex, rather than boost_regex-mt
+  patch :DATA
 
   def install
     system "./configure", "--prefix=#{prefix}"
@@ -21,7 +19,7 @@ class Analysis < Formula
     system "make install"
   end
 
-  def test
+  test do
     system 'gestimator 2>&1 |grep -q gestimator'
   end
 end

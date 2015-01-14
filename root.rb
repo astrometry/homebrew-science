@@ -1,46 +1,48 @@
-require 'formula'
+require "formula"
 
 class Root < Formula
-  homepage 'http://root.cern.ch'
-  url 'ftp://root.cern.ch/root/root_v5.34.18.source.tar.gz'
-  mirror 'https://fossies.org/linux/misc/root_v5.34.18.source.tar.gz'
-  version '5.34.18'
-  sha1 'e24e9bf8b142f2780f6cec9503409d87e4b9f8da'
-  head 'https://github.com/root-mirror/root.git', :branch => 'v5-34-00-patches'
+  homepage "http://root.cern.ch"
+  version "5.34.24"
+  sha1 "b765ee81b4b4f3e99978a237b2a4db9da0b96337"
+  url "ftp://root.cern.ch/root/root_v#{version}.source.tar.gz"
+  mirror "http://ftp.riken.jp/pub/ROOT/root_v#{version}.source.tar.gz"
+  head "https://github.com/root-mirror/root.git", :branch => "v5-34-00-patches"
 
-  option 'with-cocoa', "Use Cocoa for graphics backend instead of X11 (useful on Retina displays)"
-  option 'with-qt', "Build with Qt graphics backend and GSI's Qt integration"
-  depends_on 'xrootd' => :recommended
-  depends_on 'fftw' => :optional
-  depends_on 'qt' => [:optional, 'with-qt3support']
-  depends_on :x11
-  depends_on :python
-
-  if build.with? "cocoa"
-    patch :p0 do
-      url "http://trac.macports.org/raw-attachment/ticket/36777/patch-builtin-afterimage-disabletiff.diff"
-      sha1 "de9e7c3a6b04e15e8a8219e8396ae4a16c15d973"
-    end
-  else
-    patch :p1, :DATA
+  bottle do
+    root_url "https://downloads.sf.net/project/machomebrew/Bottles/science"
+    revision 1
+    sha1 "d39cda38ff06cf42e7360b03c26425ff2d4b3caf" => :yosemite
+    sha1 "ba3d93e628e599c427c4d0da01f0229f472dffde" => :mavericks
+    sha1 "42d3e0a4cd667b98a25a041fd56eae6e569f37ac" => :mountain_lion
   end
+
+  # Fixes compilation with recent xrootd; see:
+  # https://sft.its.cern.ch/jira/browse/ROOT-6998?
+  patch do
+    url "https://sft.its.cern.ch/jira/secure/attachment/17857/0001-TNetXNGFile-explicitly-include-XrdVersion.hh.patch"
+    sha1 "ded7da0a65ccd481dfd5639f7dcd899afeb2244f"
+  end
+
+  option "with-qt", "Build with Qt graphics backend and GSI's Qt integration"
+
+  depends_on "openssl"
+  depends_on "xrootd" => :recommended
+  depends_on "fftw" => :optional
+  depends_on "qt" => [:optional, "with-qt3support"]
+  depends_on :x11 => :optional
+  depends_on :python
 
   def install
     # brew audit doesn't like non-executables in bin
     # so we will move {thisroot,setxrd}.{c,}sh to libexec
     # (and change any references to them)
-    inreplace Dir['config/roots.in', 'config/thisroot.*sh',
-                  'etc/proof/utils/pq2/setup-pq2',
-                  'man/man1/setup-pq2.1', 'README/INSTALL', 'README/README'],
-      /bin.thisroot/, 'libexec/thisroot'
+    inreplace Dir["config/roots.in", "config/thisroot.*sh",
+                  "etc/proof/utils/pq2/setup-pq2",
+                  "man/man1/setup-pq2.1", "README/INSTALL", "README/README"],
+      /bin.thisroot/, "libexec/thisroot"
 
     # Determine architecture
-    arch = MacOS.prefer_64_bit? ? 'macosx64' : 'macosx'
-
-    cocoa_flag = (build.with? 'cocoa') ? "--enable-cocoa" : "--disable-cocoa"
-
-    qt_flag = (build.with? 'qt') ? "--enable-qt" : "--disable-qt"
-    qtgsi_flag = (build.with? 'qt') ? "--enable-qtgsi" : "--disable-qtgsi"
+    arch = MacOS.prefer_64_bit? ? "macosx64" : "macosx"
 
     # N.B. that it is absolutely essential to specify
     # the --etcdir flag to the configure script.  This is
@@ -48,36 +50,42 @@ class Root < Formula
     # not display any graphical components if the directory
     # is not specified:
     # http://root.cern.ch/phpBB3/viewtopic.php?f=3&t=15072
-    system "./configure",
-           "#{arch}",
-           "--all",
-           "--enable-builtin-glew",
-           "#{cocoa_flag}",
-           "#{qt_flag}", "#{qtgsi_flag}",
-           "--prefix=#{prefix}",
-           "--etcdir=#{prefix}/etc/root",
-           "--mandir=#{man}"
+    args = %W[
+      #{arch}
+      --all
+      --enable-builtin-glew
+      --enable-builtin-freetype
+      --prefix=#{prefix}
+      --etcdir=#{prefix}/etc/root
+      --mandir=#{man}
+    ]
 
-    # ROOT configure script does not search for Qt framework
-    if build.with? 'qt'
-      inreplace "config/Makefile.config" do |s|
-	s.gsub! /^QTLIBDIR .*/, "QTLIBDIR := -F #{Formula["qt"].opt_lib}"
-        s.gsub! /^QTLIB .*/, "QTLIB := -framework QtCore -framework QtGui -framework Qt3Support"
-      end
+    if build.with? "x11"
+      args << "--disable-cocoa"
+      args << "--enable-x11"
     end
 
+    if build.with? "qt"
+      args << "--enable-qt"
+      args << "--enable-qtgsi"
+      args << "--with-qt-libdir=#{Formula["qt"].opt_lib}"
+      args << "--with-qt-incdir=#{Formula["qt"].opt_include}"
+    end
+
+    system "./configure", *args
+
     system "make"
-    system "make install"
+    system "make", "install"
 
     # needed to run test suite
-    prefix.install 'test'
+    prefix.install "test"
 
     libexec.mkpath
     mv Dir["#{bin}/*.*sh"], libexec
   end
 
-  def test
-    system "make -C #{prefix}/test/ hsimple"
+  test do
+    system "make", "-C", "#{prefix}/test/", "hsimple"
     system "#{prefix}/test/hsimple"
   end
 
@@ -95,19 +103,3 @@ class Root < Formula
     EOS
   end
 end
-
-__END__
-# Consider removing this once
-# /opt/X11/bin/freetype-config --ftversion
-# is reporting version >=2.5.1
---- a/graf2d/freetype/Module.mk
-+++ b/graf2d/freetype/Module.mk
-@@ -8,7 +8,7 @@
- ifneq ($(BUILTINFREETYPE),yes)
- 
- FREETYPELIBF    := $(shell freetype-config --libs)
--FREETYPEINC     := $(shell freetype-config --cflags)
-+FREETYPEINC     := $(subst -I,-isystem,$(shell freetype-config --cflags)) -Wp,-v
- FREETYPELIB     := $(filter -l%,$(FREETYPELIBF))
- FREETYPELDFLAGS := $(filter-out -l%,$(FREETYPELIBF))
- FREETYPEDEP     :=

@@ -2,8 +2,16 @@ require "formula"
 
 class Opencascade < Formula
   homepage "http://www.opencascade.org/"
-  url "http://files.opencascade.com/OCCT/OCC_6.7.0_release/opencascade-6.7.0.tgz"
-  sha1 "5c22457c327b90d0256f6adefaee3853e0b0e251"
+  url "http://files.opencascade.com/OCCT/OCC_6.8.0_release/opencascade-6.8.0.tgz"
+  sha1 "fe359a12e110e9136adac2db1539026be6cc579e"
+
+  bottle do
+    root_url "https://downloads.sf.net/project/machomebrew/Bottles/science"
+    cellar :any
+    sha1 "e95b4b1558699266030fd40cc1bf7af4bfef48ca" => :yosemite
+    sha1 "9548fea6e97848083f68cb3560d15aab3e544205" => :mavericks
+    sha1 "0c3b5d96a08a19824677160d998ae461f5125be3" => :mountain_lion
+  end
 
   conflicts_with "oce", :because => "OCE is a fork for patches/improvements/experiments over OpenCascade"
 
@@ -20,7 +28,6 @@ class Opencascade < Formula
   depends_on :macos => :snow_leopard
 
   def install
-
     # setting DYLD causes many issues; all tests work fine without; suppress
     inreplace "env.sh", "export DYLD_LIBRARY_PATH", "export OCCT_DYLD_LIBRARY_PATH"
 
@@ -35,7 +42,7 @@ class Opencascade < Formula
     cmake_args << "-D3RDPARTY_TBB_DIR:PATH=#{HOMEBREW_PREFIX}" if build.with? "tbb"
 
     # must specify, otherwise finds old ft2config.h in /usr/X11R6
-    cmake_args << "-D3RDPARTY_FREETYPE_INCLUDE_DIR:PATH=#{HOMEBREW_PREFIX}/include"
+    cmake_args << "-D3RDPARTY_FREETYPE_INCLUDE_DIR:PATH=#{HOMEBREW_PREFIX}/include/freetype2"
 
     %w{freeimage gl2ps opencl tbb}.each do |feature|
       cmake_args << "-DUSE_#{feature.upcase}:BOOL=ON" if build.with? feature
@@ -47,16 +54,27 @@ class Opencascade < Formula
       cmake_args << "-D3RDPARTY_OPENCL_DLL:FILEPATH=#{opencl_path}/Libraries/libcl2module.dylib"
 
       # link against the Apple built-in OpenCL Framework
-      inreplace "adm/cmake/TKOpenGL/CMakeLists.txt", "list( APPEND TKOpenGl_USED_LIBS OpenCL )", <<-EOF.undent
-        find_library(FRAMEWORKS_OPENCL NAMES OpenCL)
-        list( APPEND TKOpenGl_USED_LIBS ${FRAMEWORKS_OPENCL} )
-      EOF
+      #inreplace "adm/cmake/TKOpenGL/CMakeLists.txt", "list( APPEND TKOpenGl_USED_LIBS OpenCL )", <<-EOF.undent
+      #  find_library(FRAMEWORKS_OPENCL NAMES OpenCL)
+      #  list( APPEND TKOpenGl_USED_LIBS ${FRAMEWORKS_OPENCL} )
+      #EOF
     end
 
     system "cmake", ".", *cmake_args
     system "make", "install"
 
-    prefix.install "doc", "samples" if build.with? "extras"
+    if build.with? "extras"
+      # 6.7.1 now installs samples/tcl by default, must move back before moving all
+      mv prefix/"samples/tcl", "samples/tcl"
+      rmdir prefix/"samples"
+      prefix.install "doc", "samples"
+    end
+
+    # add symlinks to be able to compile against OpenCascade
+    loc = "#{prefix}/mac64/clang"
+    include.install_symlink Dir["#{prefix}/inc/*"]
+    bin.install_symlink Dir["#{loc}/bin/*"]
+    lib.install_symlink Dir["#{loc}/lib/*"]
   end
 
   def caveats; <<-EOF.undent

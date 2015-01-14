@@ -2,35 +2,37 @@ require "formula"
 
 class Sextractor < Formula
   homepage "http://www.astromatic.net/software/sextractor"
-  url "http://www.astromatic.net/download/sextractor/sextractor-2.8.6.tar.gz"
-  sha1 "103ac2d51d9bae9fcbc5dda3031d82cd127f8250"
+  url "http://www.astromatic.net/download/sextractor/sextractor-2.19.5.tar.gz"
+  sha1 "43a48391b90b915b1c256b68c29c2276bee8621d"
 
   depends_on "fftw"
   depends_on "autoconf" => :build
 
   option "without-check", "Disable build-time checking (not recommended); running check will take 5-10 minutes"
 
-  def patches
-    # these patches collectively make the changes needed to compile with the Accelerate
-    # framework for linear algebra routines.
-    {:p1 => [
-      # patch the macro file for autoconf to test for functionality of Accelerate lib
-      "https://gist.githubusercontent.com/mwcraig/9540830/raw/19a0284f9d02092b7159e1bae2cdcafdb9282ef1/acx_atlas.m4.diff",
-      # lm.h patch
-      "https://gist.githubusercontent.com/mwcraig/9540846/raw/8949f238c911aa8e6b4553d7fcc9f0c2fcbb35d0/lm.h.diff",
-      # Add definition of pre-processor macro and modify GEMM call to match Accelerate
-      "https://gist.githubusercontent.com/mwcraig/9540872/raw/2069659ba5699f065044a2acbbd4538f96a28533/misc_core.c.diff",
-      # include BLAS header file
-      "https://gist.githubusercontent.com/mwcraig/9540885/raw/5372b5b7c4a716dcb5c1eedc473a82d3a07694aa/misc.c.diff",
-      # set BLAS prefix/suffix for Accelerate
-      "https://gist.githubusercontent.com/mwcraig/9540929/raw/af0485c4a4f83a5f49c679eafd622adbf4a90a3e/misc.h.diff",
-      # change name/arguments of LAPACK functions from ATLAS to Accelerate, and add include file
-      "https://gist.githubusercontent.com/mwcraig/9540907/raw/92e8af0e68cac2b1928545a9a1222752cf8440b1/pattern.c.diff"]}
+
+  # these patches collectively make the changes needed to compile with the Accelerate
+  # framework for linear algebra routines.
+  patch do
+    # make macro file for autoconf to enable Accelerate lib
+    url "https://gist.githubusercontent.com/mwcraig/ae66eadcd0f266e7138f/raw/f4625508784e75c7b3ce11d8a578589425533282/acx_accelerate.m4.diff"
+    sha1 "3abc1e8ab3975911897958c21f32e9d89481dc4f"
+  end
+  patch do
+    # Patch configure.ac to see new macro
+    url "https://gist.githubusercontent.com/mwcraig/4f61431f177b6cc0085a/raw/bf4d29a7a51ccec1ef224006fd10ac260a31c37c/configure.ac.diff"
+    sha1 "b92ec8997567aebfa0d9416d3c117d13c4c8337d"
+  end
+  patch do
+    # change name/arguments of LAPACK functions from ATLAS to Accelerate, and add include file
+    url "https://gist.githubusercontent.com/mwcraig/b423656698987b6bc492/raw/f23c4b50d972de4e7902fe3d4fa1363400a98f8f/pattern.c.diff"
+    sha1 "70f4552f30e3fd5c010e124ff2115d7b7459c020"
   end
 
   def install
     system "autoconf"
-    system "./configure", "--prefix=#{prefix}", "--without-atlas"
+    system "autoheader"
+    system "./configure", "--prefix=#{prefix}", "--enable-accelerate"
     system "make"
     system "make", "check" if build.with? "check"
     system "make", "install"

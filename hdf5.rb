@@ -1,63 +1,88 @@
-require 'formula'
+require "formula"
 
 class Hdf5 < Formula
-  homepage 'http://www.hdfgroup.org/HDF5'
-  url 'http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.13/src/hdf5-1.8.13.tar.bz2'
-  sha1 '712955025f03db808f000d8f4976b8df0c0d37b5'
+  homepage "http://www.hdfgroup.org/HDF5"
+  url "http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.14/src/hdf5-1.8.14.tar.bz2"
+  sha1 "3c48bcb0d5fb21a3aa425ed035c08d8da3d5483a"
 
-  # TODO - warn that these options conflict
+  bottle do
+    root_url "https://downloads.sf.net/project/machomebrew/Bottles/science"
+    sha1 "8be7cc59b05b0018bc22acd967ca1684a5406f35" => :yosemite
+    sha1 "be1e4803cc7f5c38ac0d70cf891c4a34891b13de" => :mavericks
+    sha1 "963c82109013f4bb9e7286106dc453f82d1f59be" => :mountain_lion
+  end
+
+  deprecated_option "enable-fortran" => "with-fortran"
+  deprecated_option "enable-threadsafe" => "with-threadsafe"
+  deprecated_option "enable-parallel" => "with-mpi"
+  deprecated_option "enable-fortran2003" => "with-fortran2003"
+  deprecated_option "enable-cxx" => "with-cxx"
+
   option :universal
-  option 'enable-fortran', 'Compile Fortran bindings'
-  option 'enable-threadsafe', 'Trade performance and C++ or Fortran support for thread safety'
-  option 'enable-parallel', 'Compile parallel bindings'
-  option 'enable-fortran2003', 'Compile Fortran 2003 bindings. Requires enable-fortran.'
-  option 'enable-cxx', 'Compile C++ bindings.'
+  option "with-check", "Run build-time tests"
+  option "with-threadsafe", "Trade performance and C++ or Fortran support for thread safety"
+  option "with-fortran2003", "Compile Fortran 2003 bindings. Requires with-fortran"
+  option "with-cxx", "Compile C++ bindings"
   option :cxx11
 
-  depends_on :fortran if build.include? 'enable-fortran' or build.include? 'enable-fortran2003'
-  depends_on 'szip'
-  depends_on :mpi => [:cc, :cxx, :f90] if build.include? "enable-parallel"
+  depends_on :fortran => :optional
+  depends_on "szip"
+  depends_on :mpi => [:optional, :cc, :cxx, :f90]
 
   def install
     ENV.universal_binary if build.universal?
-    ENV.cxx11 if build.cxx11?
+
     args = %W[
       --prefix=#{prefix}
       --enable-production
       --enable-debug=no
       --disable-dependency-tracking
       --with-zlib=/usr
-      --with-szlib=#{HOMEBREW_PREFIX}
+      --with-szlib=#{Formula["szip"].opt_prefix}
       --enable-filters=all
       --enable-static=yes
       --enable-shared=yes
     ]
 
-    args << '--enable-parallel' if build.include? 'enable-parallel'
-    args << '--enable-cxx' if build.include? 'enable-cxx'
+    args << "--enable-parallel" if build.with? "mpi"
 
-    if build.include? 'enable-threadsafe'
-      raise "--enable-threadsafe conflicts with Fortran bindings." if build.include? "enable-fortran"
-      raise "--enable-threadsafe conflicts with C++ support." if build.cxx11?
+    if build.with? "threadsafe"
+      raise "--enable-threadsafe conflicts with Fortran bindings" if build.with? "fortran"
+      raise "--enable-threadsafe conflicts with C++ support" if build.cxx11? or build.with? "cxx"
       args.concat %w[--with-pthread=/usr --enable-threadsafe]
     else
+      ENV.cxx11 if build.cxx11?
+      args << "--enable-cxx" if build.cxx11? or build.with? "cxx"
 
-      if build.cxx11?
-        args << '--enable-cxx'
+      if build.with? "fortran"
+        args << "--enable-fortran"
+        args << "--enable-fortran2003" if build.with? "fortran2003"
       end
-      if build.include? 'enable-fortran' or build.include? 'enable-fortran2003'
-        args << '--enable-fortran'
-        args << '--enable-fortran2003' if build.include? 'enable-fortran2003'
-      end
-
     end
 
-    if build.include? 'enable-parallel'
-      ENV['CC'] = 'mpicc'
-      ENV['FC'] = 'mpif90'
+    if build.with? "mpi"
+      ENV["CC"] = "mpicc"
+      ENV["FC"] = "mpif90"
     end
 
     system "./configure", *args
-    system "make install"
+    system "make"
+    system "make", "check" if build.with? "check"
+    system "make", "install"
+    share.install "#{lib}/libhdf5.settings"
+  end
+
+  test do
+    (testpath/"test.cpp").write <<-EOS
+    #include <stdio.h>
+    #include "H5public.h"
+    int main()
+    {
+      printf(\"%d.%d.%d\\n\",H5_VERS_MAJOR,H5_VERS_MINOR,H5_VERS_RELEASE);
+      return 0;
+    }
+    EOS
+    system "h5cc test.cpp"
+    assert `./a.out`.include?(version)
   end
 end

@@ -7,7 +7,7 @@ class Blasr < Formula
   sha1 'ac6add1ba8a82cac2515da36c0ec53060c20ea0f'
   head 'https://github.com/PacificBiosciences/blasr.git'
 
-  depends_on 'hdf5' => 'enable-cxx'
+  depends_on "hdf5" => "with-cxx"
 
   fails_with :clang do
     build 503
@@ -22,13 +22,16 @@ class Blasr < Formula
     build 5666
     cause <<-EOS.undent
       error: invalid conversion
-      from ‘void (*)(H5::H5Object&, std::string, void*)’
-      to ‘void (*)(H5::H5Location&, std::string, void*)’
+      from 'void (*)(H5::H5Object&, std::string, void*)'
+      to 'void (*)(H5::H5Location&, std::string, void*)'
     EOS
   end
 
   def install
-    system 'make'
+    hdf5 = Formula["hdf5"]
+    system "make", "STATIC=",
+      "HDF5INCLUDEDIR=#{hdf5.opt_include}",
+      "HDF5LIBDIR=#{hdf5.opt_lib}"
     system 'make', 'install', 'PREFIX=' + prefix
   end
 
