@@ -5,7 +5,6 @@ class GalSim < Formula
   url "https://github.com/GalSim-developers/GalSim/archive/v1.2.0.tar.gz"
   sha1 "0437b4a55c6a73ad547e5e0ff3643bc0d26134c6"
   head "https://github.com/GalSim-developers/GalSim.git"
-  revision 1
 
   depends_on "scons" => :build
   depends_on "fftw"
