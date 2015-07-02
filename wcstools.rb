@@ -1,4 +1,4 @@
-require "formula"
+require 'formula'
 
 class Wcstools < Formula
   homepage "http://tdc-www.harvard.edu/wcstools/"
